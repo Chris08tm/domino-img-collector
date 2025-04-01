@@ -6,7 +6,8 @@ const CameraCapture = () => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [dislayImage, setDisplayImage] = useState(null);
   const [cameraError, setCameraError] = useState(false);
-  const [label, setLabel] = useState(""); // Store the label input value
+  const [label, setLabel] = useState("");
+  const [submitImgStatus, setSubmitImgStatus] = useState("");
 
   useEffect(() => {
     startCamera();
@@ -19,6 +20,8 @@ const CameraCapture = () => {
 
   // Submit handler
   const handleSubmit = async () => {
+    setSubmitImgStatus("");
+
     if (!label.trim()) {
       alert("Please enter a label!");
       return;
@@ -36,7 +39,7 @@ const CameraCapture = () => {
 
     try {
       const response = await fetch(
-        "https://api.domino.alldadefinish.com/img/upload",
+        "https://api.domino.alldadefinish.com//img/upload",
         {
           method: "POST",
           body: formData,
@@ -45,14 +48,14 @@ const CameraCapture = () => {
 
       if (response.ok) {
         console.log("Image uploaded successfully!");
-        alert("Image uploaded successfully!");
+        setSubmitImgStatus("✅ Image uploaded successfully!");
       } else {
         console.error("Upload failed");
-        alert("Upload failed!");
+        setSubmitImgStatus("⛔️ Upload failed!");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error uploading image! " + error.message);
+      setSubmitImgStatus("⛔️ Error uploading image! " + error.message);
     }
   };
 
@@ -106,32 +109,32 @@ const CameraCapture = () => {
   const captureImage = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
+
     if (video && canvas) {
       const ctx = canvas.getContext("2d");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
+
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Convert canvas to base64
-      const base64Image = canvas.toDataURL("image/png");
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setCapturedImage(blob);
 
-      // Convert base64 to Blob
-      const byteString = atob(base64Image.split(",")[1]); // Remove base64 header part
-      const arrayBuffer = new ArrayBuffer(byteString.length);
-      const uintArray = new Uint8Array(arrayBuffer);
-      for (let i = 0; i < byteString.length; i++) {
-        uintArray[i] = byteString.charCodeAt(i);
-      }
-      const blob = new Blob([uintArray], { type: "image/png" });
-
-      // Set the captured image as Blob
-      setCapturedImage(blob);
-      setDisplayImage(base64Image);
+          const url = URL.createObjectURL(blob);
+          setDisplayImage(url);
+        }
+      }, "image/png");
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen min-w-screen justify-center items-center bg-sky-200">
+      {/* Display messages to user */}
+      <div className="h-6 mb-0.5">
+        {submitImgStatus !== "" ? submitImgStatus : ""}
+      </div>
+
       {/* Video feed */}
       {!cameraError ? (
         <div className="relative h-96 w-full">
@@ -200,6 +203,7 @@ const CameraCapture = () => {
               <div>
                 <button
                   onClick={() => {
+                    setSubmitImgStatus("");
                     setDisplayImage(null);
                     setCapturedImage(null);
                   }}
