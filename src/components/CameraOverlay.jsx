@@ -35,10 +35,13 @@ const CameraCapture = () => {
     formData.append("image", capturedImage);
 
     try {
-      const response = await fetch("http://10.61.1.55:8080/img/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "https://api.domino.alldadefinish.com/img/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (response.ok) {
         console.log("Image uploaded successfully!");
