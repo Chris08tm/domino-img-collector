@@ -4,6 +4,7 @@ const CameraCapture = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [capturedImage, setCapturedImage] = useState(null);
+  const [dislayImage, setDisplayImage] = useState(null);
   const [cameraError, setCameraError] = useState(false);
   const [label, setLabel] = useState(""); // Store the label input value
 
@@ -34,8 +35,7 @@ const CameraCapture = () => {
     formData.append("image", capturedImage);
 
     try {
-      // Send the image and label to the Spring Boot API (example URL)
-      const response = await fetch("http://your-api-url.com/upload", {
+      const response = await fetch("http://10.61.1.55:8080/img/upload", {
         method: "POST",
         body: formData,
       });
@@ -49,7 +49,7 @@ const CameraCapture = () => {
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error uploading image!");
+      alert("Error uploading image! " + error.message);
     }
   };
 
@@ -108,7 +108,22 @@ const CameraCapture = () => {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      setCapturedImage(canvas.toDataURL("image/png")); // Convert canvas to image
+
+      // Convert canvas to base64
+      const base64Image = canvas.toDataURL("image/png");
+
+      // Convert base64 to Blob
+      const byteString = atob(base64Image.split(",")[1]); // Remove base64 header part
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uintArray = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < byteString.length; i++) {
+        uintArray[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([uintArray], { type: "image/png" });
+
+      // Set the captured image as Blob
+      setCapturedImage(blob);
+      setDisplayImage(base64Image);
     }
   };
 
@@ -160,11 +175,11 @@ const CameraCapture = () => {
       <canvas ref={canvasRef} className="hidden"></canvas>
 
       {/* Display Captured Image */}
-      {capturedImage && (
+      {dislayImage && (
         <div className="absolute top-5 left-5 bg-white p-2 rounded-lg shadow-lg">
           <div className="flex justify-center">
             <img
-              src={capturedImage}
+              src={dislayImage}
               alt="Captured"
               className="w-32 h-32 object-cover rounded-md border-2 border-b-black"
             />
@@ -181,7 +196,10 @@ const CameraCapture = () => {
               </div>
               <div>
                 <button
-                  onClick={() => setCapturedImage(null)}
+                  onClick={() => {
+                    setDisplayImage(null);
+                    setCapturedImage(null);
+                  }}
                   className="m-2 bg-red-500 text-white px-4 py-1 rounded w-24"
                 >
                   Retake
